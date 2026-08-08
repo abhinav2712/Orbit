@@ -1,117 +1,41 @@
 zerops:
   - setup: api
-    # ==== how to build your application ====
     build:
-      # what technologies should the build
-      # container be based on (can be an array)
       base: alpine/python@3.12
-
-      # select which files / folders to deploy
-      # after the build successfully finished
-      # (can be an array of files)
-      deployFiles: app.py
-
-      # select which files to pass to
-      # the prepare run.prepare container
+      deployFiles: server/~
       addToRunPrepare:
         - requirements.txt
-
-    # ==== how to run your application ====
     run:
-      # what technology should the runtime
-      # container be based on, can be extended
-      # in `run.prepareCommands` using
-      # `sudo zsc install nodejs@20`
       base: alpine/python@3.12
-
-      # *optional* install dependencies that your
-      # runtime service requires, this runs on a
-      # separate container that prepare the final
-      # runtime image, so if files source files
-      # are needed here, they can be passed from
-      # build using "addToRunPrepare" param
       prepareCommands:
         - python3 -m pip install -r requirements.txt --ignore-installed
-
-      # what ports your app listens on
-      # and whether it supports http traffic
       ports:
-        - port: 5000
+        - port: 8000
           httpSupport: true
-
-      # how to start your application
-      start: python3 app.py
+      start: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
   - setup: worker
-    # ==== how to build your application ====
     build:
-      # what technologies should the build
-      # container be based on (can be an array)
       base: alpine/python@3.12
-
-      # select which files / folders to deploy
-      # after the build successfully finished
-      # (can be an array of files)
-      deployFiles: app.py
-
-      # select which files to pass to
-      # the prepare run.prepare container
+      deployFiles: server/~
       addToRunPrepare:
         - requirements.txt
-
-    # ==== how to run your application ====
     run:
-      # what technology should the runtime
-      # container be based on, can be extended
-      # in `run.prepareCommands` using
-      # `sudo zsc install nodejs@20`
       base: alpine/python@3.12
-
-      # *optional* install dependencies that your
-      # runtime service requires, this runs on a
-      # separate container that prepare the final
-      # runtime image, so if files source files
-      # are needed here, they can be passed from
-      # build using "addToRunPrepare" param
       prepareCommands:
         - python3 -m pip install -r requirements.txt --ignore-installed
+      start: python3 worker.py
 
-      # what ports your app listens on
-      # and whether it supports http traffic
-      ports:
-        - port: 5000
-          httpSupport: true
-
-      # how to start your application
-      start: python3 app.py
-      
   - setup: web
-    # ==== How to build your application ====
     build:
-      # what technologies should the build
-      # container be based on (can be an array)
       base: nodejs@20
-
-      # what commands to use to build your app
       buildCommands:
         - npm i
-        - npm run build my-app
-
-      # select which files / folders to deploy
-      # after the build successfully finished
-      # `~` can be used to mark starting point
-      # of deploy path, this example would deploy
-      # files in the dist folder
+        - npm run build
       deployFiles:
         - dist/~
-
-      # *optional*: which files / folders
-      # to cache for the next build run
       cache:
         - node_modules
         - package-lock.json
-
-    # ==== How to run your application ====
     run:
-      # all that is needed for SPA apps
       base: static
