@@ -30,12 +30,12 @@ zerops:
     build:
       base: nodejs@20
       buildCommands:
-        - npm i
-        - npm run build
+        - cd web && npm i && npm run build
       deployFiles:
-        - dist/~
+        - web/dist/~
       cache:
-        - node_modules
-        - package-lock.json
+        - web/node_modules
+        - web/package-lock.json
     run:
       base: static
+
