@@ -72,7 +72,14 @@ export default function ArchMap({ services }: { services: ServiceProposal[] }) {
       >
         <Background color="#1e293b" gap={20} />
         <Controls />
-        <MiniMap pannable zoomable style={{ background: "#0f172a" }} />
+        <MiniMap
+          pannable
+          zoomable
+          style={{ background: "#0f172a" }}
+          maskColor="rgba(15, 23, 42, 0.6)"
+          nodeColor="#1e293b"
+          nodeStrokeColor="#475569"
+        />
       </ReactFlow>
       <ServiceInspector service={selected} onClose={() => setSelected(null)} />
     </div>
