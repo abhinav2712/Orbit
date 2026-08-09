@@ -49,15 +49,14 @@ def _redis_url() -> str:
 def get_redis() -> Redis:
     """For your own app-level data: JSON cache values, pub/sub messages, rate-limit
     counters, the worker heartbeat. Always text, so decode_responses=True is correct."""
-    return Redis.from_url(_redis_url(), decode_responses=True)
+    return Redis.from_url(_redis_url(), decode_responses=True, health_check_interval=30)
 
 
 @lru_cache
 def get_rq_redis() -> Redis:
     """Dedicated connection for RQ's Queue/Worker. RQ pickles job payloads as raw
     bytes — decode_responses=True corrupts that on read. Must stay in bytes mode."""
-    return Redis.from_url(_redis_url())
-
+    return Redis.from_url(_redis_url(), health_check_interval=30)
 
 @lru_cache
 def get_object_storage():

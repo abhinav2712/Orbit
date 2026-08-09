@@ -39,6 +39,8 @@ zerops:
   - setup: web
     build:
       base: nodejs@20
+      envVariables:
+        VITE_API_URL: https://api-2b46-8000.prg1.zerops.app
       buildCommands:
         - cd web && npm i && npm run build
       deployFiles:

@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import json
 from typing import Callable
+import time
 
+from google.genai import errors
 from google import genai
 from google.genai import types
 
@@ -120,9 +122,20 @@ def run_agent(
             emit("Gave up on yaml repair after 2 rounds; using last attempt.")
             break
 
-        response = client.models.generate_content(
-            model=MODEL, contents=contents, config=config
-        )
+        for attempt in range(3):
+            try:
+                response = client.models.generate_content(
+                    model=MODEL, contents=contents, config=config
+                )
+                break
+            except errors.ClientError as e:
+                if ("RESOURCE_EXHAUSTED" in str(e) or "429" in str(e)) and attempt < 2:
+                    emit(
+                        "Hit Gemini's free-tier rate limit — waiting 20s before retrying..."
+                    )
+                    time.sleep(20)
+                    continue
+                raise
 
         finish_reason = str(getattr(response.candidates[0], "finish_reason", "") or "")
         if finish_reason and "STOP" not in finish_reason:

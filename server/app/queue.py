@@ -8,6 +8,7 @@ import traceback
 
 from redis import Redis
 from rq import Queue
+from datetime import datetime
 
 from app.deps import get_cached_result, get_redis, get_sessionmaker, set_cached_result
 from app.models import Analysis, AnalysisStatus
@@ -72,8 +73,12 @@ def run_analysis_job(analysis_id: str) -> None:
             analysis.facts = cached["facts"]
             analysis.services = cached["services"]
             analysis.zerops_yaml = cached["zerops_yaml"]
-            analysis.checklist = cached["checklist"]
+            analysis.checklist = [
+                {**step, "step_id": f"step-{i}"}
+                for i, step in enumerate(ctx.checklist or [])
+            ]
             analysis.status = AnalysisStatus.done
+            analysis.completed_at = datetime.utcnow()
             session.commit()
             return
 
@@ -110,8 +115,12 @@ def run_analysis_job(analysis_id: str) -> None:
         analysis.facts = facts.model_dump()
         analysis.services = ctx.services
         analysis.zerops_yaml = ctx.zerops_yaml
-        analysis.checklist = ctx.checklist
+        analysis.checklist = [
+            {**step, "step_id": f"step-{i}"}
+            for i, step in enumerate(ctx.checklist or [])
+        ]
         analysis.status = AnalysisStatus.done
+        analysis.completed_at = datetime.utcnow()
         session.commit()
 
         artifacts.upload_analysis_artifacts(
