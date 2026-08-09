@@ -5,6 +5,7 @@ import ProgressStream from "../components/ProgressStream";
 import YamlViewer from "../components/YamlViewer";
 import ArchMap from "../components/ArchMap";
 import Checklist from "../components/Checklist";
+import FactsReport from "../components/FactsReport";
 
 type Tab = "architecture" | "yaml" | "checklist" | "report";
 
@@ -110,10 +111,8 @@ export default function Analysis() {
           {tab === "checklist" && result.checklist && (
             <Checklist analysisId={result.id} steps={result.checklist} />
           )}
-          {tab === "report" && (
-            <pre className="bg-slate-900 border border-slate-800 rounded-lg p-4 font-mono-code text-xs overflow-x-auto">
-              {JSON.stringify(result.facts_summary, null, 2)}
-            </pre>
+          {tab === "report" && result.facts_summary && (
+            <FactsReport facts={result.facts_summary} />
           )}
         </div>
       )}

@@ -106,6 +106,17 @@ def run_analysis_job(analysis_id: str) -> None:
 
         ctx = run_agent(facts.model_dump(), cloned.path, on_progress=on_progress)
 
+        if not ctx.services or not ctx.zerops_yaml or not ctx.yaml_valid:
+            _fail(
+                session,
+                redis,
+                analysis_id,
+                "The agent didn't finish producing a complete architecture (services + zerops.yaml) "
+                "within its turn budget. This can happen on larger repos, or in unfamiliar codebases "
+                "with sparse evidence. Try again.",
+            )
+            return
+
         analysis.status = AnalysisStatus.validating
         session.commit()
         _publish(

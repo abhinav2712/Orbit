@@ -15,7 +15,7 @@ from engine.tools import TOOL, AgentContext, execute_tool
 
 # ⚠️ Verify against Google AI Studio's current free-tier list — this space moves fast.
 MODEL = "gemini-2.5-flash"
-MAX_TURNS = 8
+MAX_TURNS = 10
 MAX_REPAIR_ROUNDS = 2
 
 ORBIT_ARCHITECT_PROMPT = """You are a Zerops platform architect helping migrate a codebase onto Zerops.
@@ -33,6 +33,8 @@ Rules:
   emit_migration_checklist. Use read_file only when the Facts are genuinely ambiguous.
 - If emit_zerops_yaml returns validation errors, fix them and call it again. You get at most
   2 repair attempts — make them count.
+- Don't call read_file more than 2-3 times total — the Facts you were given are usually sufficient
+  to decide on an architecture. Move to propose_architecture as soon as you have enough signal.
 
 Zerops service-type reference (condensed):
 - Python apps            -> python@3.12   (or alpine/python@3.12)
