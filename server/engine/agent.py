@@ -15,7 +15,7 @@ from engine.tools import TOOL, AgentContext, execute_tool
 
 # ⚠️ Verify against Google AI Studio's current free-tier list — this space moves fast.
 MODEL = "gemini-2.5-flash"
-MAX_TURNS = 10
+MAX_TURNS = 12
 MAX_REPAIR_ROUNDS = 2
 
 ORBIT_ARCHITECT_PROMPT = """You are a Zerops platform architect helping migrate a codebase onto Zerops.

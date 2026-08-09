@@ -1,8 +1,24 @@
+<div align="center">
+
+<img src="docs/logo.svg" width="120" height="120" alt="Orbit logo" />
+
 # Orbit
+### AI MIGRATION COPILOT FOR ZEROPS
 
 **Point Orbit at any public GitHub repo. Get a launch-ready Zerops architecture in 60 seconds.**
 
-[Live Demo](https://web-2b46.prg1.zerops.app) · [Source](https://github.com/abhinav2712/Orbit) · Built for **The Zerops Challenge** (WeMakeDevs × Zerops)
+A deterministic scanner reads your repo and cites its evidence. A hand-rolled agent reasons over that evidence — never inventing a service it can't point to. The output is a schema-validated `zerops.yaml`, an interactive architecture map, and a migration checklist, ready to commit.
+
+![license](https://img.shields.io/badge/license-MIT-3cbdb2)
+![python](https://img.shields.io/badge/python-3.12-3cbdb2)
+![frontend](https://img.shields.io/badge/frontend-react%20%2B%20ts-3cbdb2)
+![demo](https://img.shields.io/badge/demo-live-3ecf6e)
+![llm](https://img.shields.io/badge/LLM-Gemini%202.5%20Flash-4d9fff)
+![zerops](https://img.shields.io/badge/built%20on-Zerops-7c5cff)
+
+**[Live demo →](https://web-2b46.prg1.zerops.app)**  ·  **[Source →](https://github.com/abhinav2712/Orbit)**  ·  **[Watch the 3-min demo →](ADD_VIDEO_URL_HERE)**
+
+</div>
 
 ---
 

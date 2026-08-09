@@ -131,6 +131,7 @@ class AgentContext:
     yaml_valid: bool = False
     checklist: list | None = None
     repair_rounds_used: int = 0
+    read_file_count: int = 0
 
 
 def _safe_join(root: str, rel_path: str) -> str:
@@ -143,6 +144,11 @@ def _safe_join(root: str, rel_path: str) -> str:
 
 def execute_tool(name: str, tool_input: dict, ctx: AgentContext) -> dict:
     if name == "read_file":
+        if ctx.read_file_count >= 3:
+            return {
+                "error": "read_file budget exhausted (max 3 calls this run) — decide now using what you've already read plus the Facts."
+            }
+        ctx.read_file_count += 1
         return _read_file(tool_input, ctx)
     if name == "propose_architecture":
         ctx.services = tool_input["services"]
