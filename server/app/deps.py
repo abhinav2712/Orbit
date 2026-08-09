@@ -21,14 +21,6 @@ def _database_url() -> str:
 
 
 @lru_cache
-def get_redis() -> Redis:
-    url = os.environ.get("REDIS_URL")
-    if not url:
-        raise RuntimeError("REDIS_URL not set — check zerops.yml envVariables")
-    return Redis.from_url(url, decode_responses=True)
-
-
-@lru_cache
 def get_engine():
     return create_engine(_database_url(), pool_pre_ping=True)
 
@@ -48,12 +40,10 @@ def get_db() -> Session:
 
 @lru_cache
 def get_redis() -> Redis:
-    # Verify these against `cache`'s Access Details panel in Zerops.
-    host = os.environ.get("cache_hostname", "localhost")
-    port = int(os.environ.get("cache_port", 6379))
-    password = os.environ.get("cache_password")
-    return Redis(host=host, port=port, password=password, decode_responses=True)
-
+    url = os.environ.get("REDIS_URL")
+    if not url:
+        raise RuntimeError("REDIS_URL not set — check zerops.yml envVariables")
+    return Redis.from_url(url, decode_responses=True)
 
 
 @lru_cache
