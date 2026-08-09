@@ -1,16 +1,30 @@
-import os
-from redis import Redis
-from rq import Worker, Queue
+"""RQ worker entrypoint. Listens on 'orbit-analyses' and writes a heartbeat every 30s
+so api's /healthz can report worker liveness."""
 
-# ⚠️ Verify these var names against your `cache` service's "Access details"
-# panel in Zerops — I can't see your live env vars, so this is my best guess
-# at Zerops's naming convention (<hostname>_<field>). Adjust if they differ.
-redis_conn = Redis(
-    host=os.environ.get("cache_hostname", "localhost"),
-    port=int(os.environ.get("cache_port", 6379)),
-    password=os.environ.get("cache_password"),
-)
+from __future__ import annotations
+
+import threading
+import time
+
+from rq import Worker
+
+from app.deps import get_redis
+from app.queue import get_queue
+
+HEARTBEAT_KEY = "worker:heartbeat"
+HEARTBEAT_INTERVAL_SECONDS = 30
+
+
+def _heartbeat_loop() -> None:
+    redis = get_redis()
+    while True:
+        redis.setex(
+            HEARTBEAT_KEY, HEARTBEAT_INTERVAL_SECONDS * 2, str(int(time.time()))
+        )
+        time.sleep(HEARTBEAT_INTERVAL_SECONDS)
+
 
 if __name__ == "__main__":
-    worker = Worker([Queue("default", connection=redis_conn)], connection=redis_conn)
+    threading.Thread(target=_heartbeat_loop, daemon=True).start()
+    worker = Worker([get_queue()], connection=get_redis())
     worker.work()

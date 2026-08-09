@@ -13,6 +13,9 @@ zerops:
         - port: 8000
           httpSupport: true
       start: uvicorn app.main:app --host 0.0.0.0 --port 8000
+      envVariables:
+        DATABASE_URL: ${postgresql_connectionString}
+        REDIS_URL: ${valkey_connectionString}
 
   - setup: worker
     build:
@@ -25,6 +28,13 @@ zerops:
       prepareCommands:
         - python3 -m pip install -r requirements.txt --ignore-installed
       start: python3 worker.py
+      envVariables:
+        DATABASE_URL: ${postgresql_connectionString}
+        REDIS_URL: ${valkey_connectionString}
+        S3_ENDPOINT_URL: ${objectstorage_apiUrl}
+        S3_ACCESS_KEY_ID: ${objectstorage_accessKeyId}
+        S3_SECRET_ACCESS_KEY: ${objectstorage_secretAccessKey}
+        S3_BUCKET_NAME: ${objectstorage_bucketName}
 
   - setup: web
     build:

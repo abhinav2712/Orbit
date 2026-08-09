@@ -2,3 +2,9 @@ fastapi
 uvicorn
 redis
 rq
+sqlalchemy
+psycopg[binary]
+boto3
+requests
+pyyaml
+anthropic
