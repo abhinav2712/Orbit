@@ -38,12 +38,25 @@ def get_db() -> Session:
         db.close()
 
 
-@lru_cache
-def get_redis() -> Redis:
+def _redis_url() -> str:
     url = os.environ.get("REDIS_URL")
     if not url:
         raise RuntimeError("REDIS_URL not set — check zerops.yml envVariables")
-    return Redis.from_url(url, decode_responses=True)
+    return url
+
+
+@lru_cache
+def get_redis() -> Redis:
+    """For your own app-level data: JSON cache values, pub/sub messages, rate-limit
+    counters, the worker heartbeat. Always text, so decode_responses=True is correct."""
+    return Redis.from_url(_redis_url(), decode_responses=True)
+
+
+@lru_cache
+def get_rq_redis() -> Redis:
+    """Dedicated connection for RQ's Queue/Worker. RQ pickles job payloads as raw
+    bytes — decode_responses=True corrupts that on read. Must stay in bytes mode."""
+    return Redis.from_url(_redis_url())
 
 
 @lru_cache

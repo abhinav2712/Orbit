@@ -15,13 +15,20 @@ from engine import artifacts
 from engine.agent import run_agent
 from engine.cloner import ClonerError, clone_repo, cleanup as cleanup_clone
 from engine.scanner import scan_repo
+from app.deps import (
+    get_cached_result,
+    get_redis,
+    get_rq_redis,
+    get_sessionmaker,
+    set_cached_result,
+)
 
 JOB_TIMEOUT_SECONDS = 300  # 5 min wall-clock cap, per PRD F8
 
 
 def get_queue() -> Queue:
     return Queue(
-        "orbit-analyses", connection=get_redis(), default_timeout=JOB_TIMEOUT_SECONDS
+        "orbit-analyses", connection=get_rq_redis(), default_timeout=JOB_TIMEOUT_SECONDS
     )
 
 

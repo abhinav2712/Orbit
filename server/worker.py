@@ -11,6 +11,9 @@ from rq import Worker
 from app.deps import get_redis
 from app.queue import get_queue
 
+from app.deps import get_redis, get_rq_redis
+from app.queue import get_queue
+
 HEARTBEAT_KEY = "worker:heartbeat"
 HEARTBEAT_INTERVAL_SECONDS = 30
 
@@ -26,5 +29,5 @@ def _heartbeat_loop() -> None:
 
 if __name__ == "__main__":
     threading.Thread(target=_heartbeat_loop, daemon=True).start()
-    worker = Worker([get_queue()], connection=get_redis())
+    worker = Worker([get_queue()], connection=get_rq_redis())
     worker.work()
