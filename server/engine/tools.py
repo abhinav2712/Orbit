@@ -1,13 +1,15 @@
-"""Tool schemas + executors for the Orbit architect agent."""
+"""Tool schemas + executors for the Orbit architect agent. Gemini function-calling shape."""
 
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass
 
+from google.genai import types
+
 from engine.validator import validate_zerops_yaml
 
-TOOLS = [
+_TOOL_SCHEMAS = [
     {
         "name": "read_file",
         "description": (
@@ -15,7 +17,7 @@ TOOLS = [
             "Use this only when the provided Facts are genuinely ambiguous about something "
             "load-bearing — most of your reasoning should come from the Facts you were given."
         ),
-        "input_schema": {
+        "parameters": {
             "type": "object",
             "properties": {
                 "path": {
@@ -34,7 +36,7 @@ TOOLS = [
     {
         "name": "propose_architecture",
         "description": "Submit the proposed Zerops service graph once you've decided which services the repo needs.",
-        "input_schema": {
+        "parameters": {
             "type": "object",
             "properties": {
                 "services": {
@@ -74,7 +76,7 @@ TOOLS = [
             "Submit a complete zerops.yaml for validation. Returns {valid: true} on success, "
             "or the exact validation errors to fix — you get at most 2 repair attempts."
         ),
-        "input_schema": {
+        "parameters": {
             "type": "object",
             "properties": {"yaml_text": {"type": "string"}},
             "required": ["yaml_text"],
@@ -83,7 +85,7 @@ TOOLS = [
     {
         "name": "emit_migration_checklist",
         "description": "Submit the ordered migration checklist for the developer to follow.",
-        "input_schema": {
+        "parameters": {
             "type": "object",
             "properties": {
                 "steps": {
@@ -109,11 +111,20 @@ TOOLS = [
     },
 ]
 
+TOOL = types.Tool(
+    function_declarations=[
+        types.FunctionDeclaration(
+            name=s["name"],
+            description=s["description"],
+            parameters_json_schema=s["parameters"],
+        )
+        for s in _TOOL_SCHEMAS
+    ]
+)
+
 
 @dataclass
 class AgentContext:
-    """Mutable state the tool executors write into; agent.py reads it after the loop."""
-
     clone_path: str
     services: list | None = None
     zerops_yaml: str | None = None
@@ -123,7 +134,6 @@ class AgentContext:
 
 
 def _safe_join(root: str, rel_path: str) -> str:
-    """Resolve rel_path under root, refusing to escape it (no .., no symlink breakout)."""
     root_real = os.path.realpath(root)
     target = os.path.realpath(os.path.join(root, rel_path))
     if target != root_real and not target.startswith(root_real + os.sep):

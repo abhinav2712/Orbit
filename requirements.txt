@@ -7,4 +7,4 @@ psycopg[binary]
 boto3
 requests
 pyyaml
-anthropic
+google-genai

@@ -1,16 +1,18 @@
-"""Hand-rolled Anthropic tool-use loop — no LangChain/CrewAI/agent frameworks.
-Direct anthropic SDK only, per Orbit's judged differentiator requirement."""
+"""Hand-rolled Gemini function-calling loop — no LangChain/CrewAI/agent frameworks.
+Direct google-genai SDK only, per Orbit's judged differentiator requirement."""
 
 from __future__ import annotations
 
 import json
 from typing import Callable
 
-import anthropic
+from google import genai
+from google.genai import types
 
-from engine.tools import TOOLS, AgentContext, execute_tool
+from engine.tools import TOOL, AgentContext, execute_tool
 
-MODEL = "claude-sonnet-5"
+# ⚠️ Verify against Google AI Studio's current free-tier list — this space moves fast.
+MODEL = "gemini-2.5-flash"
 MAX_TURNS = 8
 MAX_REPAIR_ROUNDS = 2
 
@@ -26,8 +28,7 @@ Rules:
   Facts show a real need for one.
 - Every zerops.yaml block you emit must trace back to a fact or a file you actually read.
 - Use the tools roughly in this order: propose_architecture, then emit_zerops_yaml, then
-  emit_migration_checklist. Use read_file only when the Facts are genuinely ambiguous about
-  something load-bearing (e.g. which port an app actually binds).
+  emit_migration_checklist. Use read_file only when the Facts are genuinely ambiguous.
 - If emit_zerops_yaml returns validation errors, fix them and call it again. You get at most
   2 repair attempts — make them count.
 
@@ -83,27 +84,29 @@ def run_agent(
     clone_path: str,
     on_progress: Callable[[str], None] | None = None,
 ) -> AgentContext:
-    client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
+    client = genai.Client()  # reads GEMINI_API_KEY from env
     ctx = AgentContext(clone_path=clone_path)
 
-    system = [
-        {
-            "type": "text",
-            "text": ORBIT_ARCHITECT_PROMPT,
-            "cache_control": {"type": "ephemeral"},
-        }
+    contents: list = [
+        types.Content(
+            role="user",
+            parts=[
+                types.Part.from_text(
+                    text=(
+                        "Here are the verified Facts for this repository:\n\n"
+                        f"{json.dumps(facts_json, indent=2)}\n\n"
+                        "Propose a Zerops architecture, then emit a validated zerops.yaml, "
+                        "then emit a migration checklist."
+                    )
+                )
+            ],
+        )
     ]
-    messages = [
-        {
-            "role": "user",
-            "content": (
-                "Here are the verified Facts for this repository:\n\n"
-                f"{json.dumps(facts_json, indent=2)}\n\n"
-                "Propose a Zerops architecture, then emit a validated zerops.yaml, "
-                "then emit a migration checklist."
-            ),
-        }
-    ]
+    config = types.GenerateContentConfig(
+        system_instruction=ORBIT_ARCHITECT_PROMPT,
+        tools=[TOOL],
+        max_output_tokens=4096,
+    )
 
     def emit(msg: str) -> None:
         if on_progress:
@@ -114,37 +117,32 @@ def run_agent(
             emit("Gave up on yaml repair after 2 rounds; using last attempt.")
             break
 
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=4096,
-            system=system,
-            tools=TOOLS,
-            messages=messages,
+        response = client.models.generate_content(
+            model=MODEL, contents=contents, config=config
         )
 
-        if response.stop_reason == "refusal":
-            emit("Model declined to continue — stopping.")
+        finish_reason = str(getattr(response.candidates[0], "finish_reason", "") or "")
+        if finish_reason and "STOP" not in finish_reason:
+            emit(f"Model stopped unexpectedly ({finish_reason}) — stopping.")
             break
 
-        messages.append({"role": "assistant", "content": response.content})
+        contents.append(response.candidates[0].content)
 
-        if response.stop_reason != "tool_use":
+        calls = response.function_calls or []
+        if not calls:
             break
 
-        tool_results = []
-        for block in response.content:
-            if block.type != "tool_use":
-                continue
-            emit(f"Running {block.name}...")
-            result = execute_tool(block.name, block.input, ctx)
-            tool_results.append(
-                {
-                    "type": "tool_result",
-                    "tool_use_id": block.id,
-                    "content": json.dumps(result),
-                    "is_error": bool(result.get("error")),
-                }
+        response_parts = []
+        for call in calls:
+            # ⚠️ UNVERIFIED: if this errors, run smoke_test.py and swap to call.function_call.name / .args
+            emit(f"Running {call.name}...")
+            result = execute_tool(call.name, dict(call.args), ctx)
+            response_parts.append(
+                types.Part.from_function_response(
+                    name=call.name, response={"result": result}
+                )
             )
-        messages.append({"role": "user", "content": tool_results})
+        # ⚠️ UNVERIFIED: role="tool" per docs example — if rejected, try role="user"
+        contents.append(types.Content(role="tool", parts=response_parts))
 
     return ctx
