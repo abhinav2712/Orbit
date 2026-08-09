@@ -105,6 +105,9 @@ def run_agent(
     config = types.GenerateContentConfig(
         system_instruction=ORBIT_ARCHITECT_PROMPT,
         tools=[TOOL],
+        tool_config=types.ToolConfig(
+            function_calling_config=types.FunctionCallingConfig(mode="ANY")
+        ),
         max_output_tokens=4096,
     )
 
@@ -144,5 +147,9 @@ def run_agent(
             )
         # ⚠️ UNVERIFIED: role="tool" per docs example — if rejected, try role="user"
         contents.append(types.Content(role="tool", parts=response_parts))
+
+        if ctx.checklist is not None:
+            emit("Migration checklist emitted — done.")
+            break
 
     return ctx
