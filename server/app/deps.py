@@ -70,7 +70,7 @@ def get_object_storage():
     )
 
 
-RATE_LIMIT_MAX = 5
+RATE_LIMIT_MAX = 50
 RATE_LIMIT_WINDOW_SECONDS = 3600
 
 
