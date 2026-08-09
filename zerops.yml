@@ -15,7 +15,7 @@ zerops:
       start: uvicorn app.main:app --host 0.0.0.0 --port 8000
       envVariables:
         DATABASE_URL: ${postgresql_connectionString}
-        REDIS_URL: ${valkey_connectionString}
+        REDIS_URL: ${valkey_connectionTlsString}
 
   - setup: worker
     build:
@@ -30,7 +30,7 @@ zerops:
       start: python3 worker.py
       envVariables:
         DATABASE_URL: ${postgresql_connectionString}
-        REDIS_URL: ${valkey_connectionString}
+        REDIS_URL: ${valkey_connectionTlsString}
         S3_ENDPOINT_URL: ${objectstorage_apiUrl}
         S3_ACCESS_KEY_ID: ${objectstorage_accessKeyId}
         S3_SECRET_ACCESS_KEY: ${objectstorage_secretAccessKey}
