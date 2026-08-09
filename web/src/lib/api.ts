@@ -85,6 +85,10 @@ export function toggleChecklistStep(analysisId: string, stepId: string): Promise
   return request(`/api/analyses/${analysisId}/checklist/${stepId}/toggle`, { method: 'POST' });
 }
 
+export function deleteAnalysis(idOrSlug: string): Promise<{ deleted: boolean }> {
+  return request(`/api/analyses/${idOrSlug}`, { method: 'DELETE' });
+}
+
 export interface ProgressEvent { status: string; message: string }
 
 export function streamAnalysisEvents(

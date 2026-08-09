@@ -1,7 +1,18 @@
 @import "tailwindcss";
 
 @theme {
-  --color-accent: #7dd3fc;
+  --color-slate-950: #09090f;
+  --color-slate-900: #12141c;
+  --color-slate-800: #1c1f2b;
+  --color-slate-700: #2a2e3d;
+  --color-slate-600: #3d4254;
+  --color-slate-500: #6b7280;
+  --color-slate-400: #8b93a7;
+  --color-slate-300: #b4bacc;
+
+  --color-accent: #7c6cf6;
+  --color-success: #3ecf6e;
+  --color-info: #4d9fff;
 }
 
 body {
@@ -10,4 +21,32 @@ body {
 
 .font-mono-code {
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+@keyframes orbit-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 108, 246, 0.5);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(124, 108, 246, 0);
+  }
+}
+
+.stage-active {
+  animation: orbit-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

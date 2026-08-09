@@ -9,6 +9,14 @@ const STAGES = [
   "validating",
   "done",
 ] as const;
+const STAGE_LABEL: Record<string, string> = {
+  queued: "Queued",
+  cloning: "Cloning",
+  scanning: "Scanning",
+  reasoning: "Architecting",
+  validating: "Validating",
+  done: "Done",
+};
 
 interface Props {
   analysisId: string;
@@ -41,39 +49,57 @@ export default function ProgressStream({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisId]);
 
-  const currentIndex = STAGES.indexOf(status as (typeof STAGES)[number]);
+  const currentIndex = Math.max(
+    0,
+    STAGES.indexOf(status as (typeof STAGES)[number]),
+  );
+  const fillPercent = (currentIndex / (STAGES.length - 1)) * 100;
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-16">
-      <div className="flex items-center justify-between mb-8">
-        {STAGES.map((stage, i) => (
-          <div key={stage} className="flex-1 flex flex-col items-center">
-            <div
-              className={`w-3 h-3 rounded-full transition ${
-                i < currentIndex
-                  ? "bg-accent"
-                  : i === currentIndex
-                    ? "bg-accent animate-pulse"
-                    : "bg-slate-700"
-              }`}
-            />
-            <span
-              className={`text-xs mt-2 ${i <= currentIndex ? "text-slate-300" : "text-slate-600"}`}
-            >
-              {stage}
-            </span>
-          </div>
-        ))}
+      <div className="relative mb-10">
+        <div className="absolute top-[7px] left-0 right-0 h-px bg-slate-800" />
+        <div
+          className="absolute top-[7px] left-0 h-px bg-accent transition-all duration-700 ease-out"
+          style={{ width: `${fillPercent}%` }}
+        />
+        <div className="relative flex items-center justify-between">
+          {STAGES.map((stage, i) => (
+            <div key={stage} className="flex flex-col items-center gap-2">
+              <div
+                className={`w-[14px] h-[14px] rounded-full border-2 transition-all duration-500 ${
+                  i < currentIndex
+                    ? "bg-accent border-accent"
+                    : i === currentIndex
+                      ? "bg-slate-950 border-accent stage-active"
+                      : "bg-slate-950 border-slate-700"
+                }`}
+              />
+              <span
+                className={`text-xs transition-colors ${i <= currentIndex ? "text-slate-200" : "text-slate-600"}`}
+              >
+                {STAGE_LABEL[stage]}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
+
       <div
         className="bg-slate-900 border border-slate-800 rounded-lg p-4 font-mono-code text-sm
-                       max-h-64 overflow-y-auto flex flex-col gap-1"
+                       max-h-64 overflow-y-auto flex flex-col gap-1.5"
       >
         {log.length === 0 && (
-          <span className="text-slate-600">Waiting for progress…</span>
+          <span className="text-slate-600 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            Waiting for progress…
+          </span>
         )}
         {log.map((e, i) => (
-          <div key={i} className="text-slate-400">
+          <div
+            key={i}
+            className="text-slate-400 animate-[fadeIn_0.3s_ease-out]"
+          >
             <span className="text-accent">[{e.status}]</span> {e.message}
           </div>
         ))}

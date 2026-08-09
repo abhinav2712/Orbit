@@ -107,3 +107,16 @@ def toggle_checklist_step(
         state.checked = not state.checked
     db.commit()
     return {"checked": state.checked}
+
+
+@router.delete("/{id_or_slug}")
+def delete_analysis(id_or_slug: str, db: Session = Depends(get_db)):
+    analysis = db.get(Analysis, id_or_slug) if _is_uuid(id_or_slug) else None
+    if not analysis:
+        analysis = db.query(Analysis).filter(Analysis.slug == id_or_slug).first()
+    if not analysis:
+        raise HTTPException(404, "Analysis not found.")
+    db.query(ChecklistState).filter(ChecklistState.analysis_id == analysis.id).delete()
+    db.delete(analysis)
+    db.commit()
+    return {"deleted": True}

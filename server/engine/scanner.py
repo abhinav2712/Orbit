@@ -159,116 +159,147 @@ def _scan_env_vars_and_ports(
     return env_hits, port_hits
 
 
+def _find_manifests(root: str, filename: str) -> list[str]:
+    found = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [
+            d for d in dirnames if d not in IGNORE_DIRS and not d.startswith(".")
+        ]
+        if filename in filenames:
+            found.append(os.path.join(dirpath, filename))
+    return found
+
+
 def _scan_python(root: str, facts: Facts) -> None:
-    req_path = os.path.join(root, "requirements.txt")
-    pyproject_path = os.path.join(root, "pyproject.toml")
-    if os.path.exists(req_path):
-        manifest_path, text = (
-            req_path,
-            open(req_path, encoding="utf-8", errors="ignore").read(),
-        )
-    elif os.path.exists(pyproject_path):
-        manifest_path, text = (
-            pyproject_path,
-            open(pyproject_path, encoding="utf-8", errors="ignore").read(),
-        )
-    else:
+    manifest_paths = _find_manifests(root, "requirements.txt") + _find_manifests(
+        root, "pyproject.toml"
+    )
+    if not manifest_paths:
         return
 
-    rel = _rel(root, manifest_path)
-    facts.languages.append(
-        Fact(value="python", evidence=[Evidence(file=rel, line=1, snippet="found")])
-    )
-    lowered = text.lower()
+    seen_lang = False
+    for manifest_path in manifest_paths:
+        rel = _rel(root, manifest_path)
+        if not seen_lang:
+            facts.languages.append(
+                Fact(
+                    value="python",
+                    evidence=[Evidence(file=rel, line=1, snippet="found")],
+                )
+            )
+            seen_lang = True
 
-    for pkg, label in PY_FRAMEWORK_PACKAGES.items():
-        if pkg in lowered:
-            facts.frameworks.append(
-                Fact(value=label, evidence=[Evidence(file=rel, line=1, snippet=pkg)])
-            )
-    for pkg, label in PY_DATASTORE_PACKAGES.items():
-        if pkg in lowered:
-            facts.datastores.append(
-                Fact(value=label, evidence=[Evidence(file=rel, line=1, snippet=pkg)])
-            )
-    for pkg, label in PY_STORAGE_PACKAGES.items():
-        if pkg in lowered:
-            facts.storage.append(
-                Fact(value=label, evidence=[Evidence(file=rel, line=1, snippet=pkg)])
-            )
-    for pkg, label in PY_QUEUE_PACKAGES.items():
-        if pkg in lowered:
-            facts.queues.append(
-                Fact(value=label, evidence=[Evidence(file=rel, line=1, snippet=pkg)])
-            )
+        lowered = open(manifest_path, encoding="utf-8", errors="ignore").read().lower()
+        for pkg, label in PY_FRAMEWORK_PACKAGES.items():
+            if pkg in lowered:
+                facts.frameworks.append(
+                    Fact(
+                        value=label, evidence=[Evidence(file=rel, line=1, snippet=pkg)]
+                    )
+                )
+        for pkg, label in PY_DATASTORE_PACKAGES.items():
+            if pkg in lowered:
+                facts.datastores.append(
+                    Fact(
+                        value=label, evidence=[Evidence(file=rel, line=1, snippet=pkg)]
+                    )
+                )
+        for pkg, label in PY_STORAGE_PACKAGES.items():
+            if pkg in lowered:
+                facts.storage.append(
+                    Fact(
+                        value=label, evidence=[Evidence(file=rel, line=1, snippet=pkg)]
+                    )
+                )
+        for pkg, label in PY_QUEUE_PACKAGES.items():
+            if pkg in lowered:
+                facts.queues.append(
+                    Fact(
+                        value=label, evidence=[Evidence(file=rel, line=1, snippet=pkg)]
+                    )
+                )
 
 
 def _scan_node(root: str, facts: Facts) -> None:
-    pkg_path = os.path.join(root, "package.json")
-    if not os.path.exists(pkg_path):
-        return
-    try:
-        data = json.loads(open(pkg_path, encoding="utf-8", errors="ignore").read())
-    except json.JSONDecodeError:
+    manifest_paths = _find_manifests(root, "package.json")
+    if not manifest_paths:
         return
 
-    rel = _rel(root, pkg_path)
-    facts.languages.append(
-        Fact(value="node", evidence=[Evidence(file=rel, line=1, snippet="found")])
-    )
-    deps = {**data.get("dependencies", {}), **data.get("devDependencies", {})}
+    seen_lang = False
+    for manifest_path in manifest_paths:
+        try:
+            data = json.loads(
+                open(manifest_path, encoding="utf-8", errors="ignore").read()
+            )
+        except json.JSONDecodeError:
+            continue
 
-    for pkg, label in NODE_FRAMEWORK_PACKAGES.items():
-        if pkg in deps:
-            facts.frameworks.append(
+        rel = _rel(root, manifest_path)
+        if not seen_lang:
+            facts.languages.append(
                 Fact(
-                    value=label,
-                    evidence=[
-                        Evidence(file=rel, line=1, snippet=f'"{pkg}": "{deps[pkg]}"')
-                    ],
+                    value="node", evidence=[Evidence(file=rel, line=1, snippet="found")]
                 )
             )
-    for pkg, label in NODE_DATASTORE_PACKAGES.items():
-        if pkg in deps:
-            facts.datastores.append(
-                Fact(
-                    value=label,
-                    evidence=[
-                        Evidence(file=rel, line=1, snippet=f'"{pkg}": "{deps[pkg]}"')
-                    ],
+            seen_lang = True
+
+        deps = {**data.get("dependencies", {}), **data.get("devDependencies", {})}
+        for pkg, label in NODE_FRAMEWORK_PACKAGES.items():
+            if pkg in deps:
+                facts.frameworks.append(
+                    Fact(
+                        value=label,
+                        evidence=[
+                            Evidence(
+                                file=rel, line=1, snippet=f'"{pkg}": "{deps[pkg]}"'
+                            )
+                        ],
+                    )
                 )
-            )
-    for pkg, label in NODE_STORAGE_PACKAGES.items():
-        if pkg in deps:
-            facts.storage.append(
-                Fact(
-                    value=label,
-                    evidence=[
-                        Evidence(file=rel, line=1, snippet=f'"{pkg}": "{deps[pkg]}"')
-                    ],
+        for pkg, label in NODE_DATASTORE_PACKAGES.items():
+            if pkg in deps:
+                facts.datastores.append(
+                    Fact(
+                        value=label,
+                        evidence=[
+                            Evidence(
+                                file=rel, line=1, snippet=f'"{pkg}": "{deps[pkg]}"'
+                            )
+                        ],
+                    )
                 )
-            )
-    for pkg, label in NODE_QUEUE_PACKAGES.items():
-        if pkg in deps:
+        for pkg, label in NODE_STORAGE_PACKAGES.items():
+            if pkg in deps:
+                facts.storage.append(
+                    Fact(
+                        value=label,
+                        evidence=[
+                            Evidence(
+                                file=rel, line=1, snippet=f'"{pkg}": "{deps[pkg]}"'
+                            )
+                        ],
+                    )
+                )
+        if "bullmq" in deps:
             facts.queues.append(
                 Fact(
-                    value=label,
-                    evidence=[Evidence(file=rel, line=1, snippet=f'"{pkg}"')],
+                    value="bullmq",
+                    evidence=[Evidence(file=rel, line=1, snippet='"bullmq"')],
                 )
             )
 
-    build_script = data.get("scripts", {}).get("build")
-    if build_script:
-        facts.build_commands.append(
-            Fact(
-                value=build_script,
-                evidence=[
-                    Evidence(file=rel, line=1, snippet=f'"build": "{build_script}"')
-                ],
+        build_script = data.get("scripts", {}).get("build")
+        if build_script:
+            facts.build_commands.append(
+                Fact(
+                    value=build_script,
+                    evidence=[
+                        Evidence(file=rel, line=1, snippet=f'"build": "{build_script}"')
+                    ],
+                )
             )
-        )
-        if "vite" in deps:
-            facts.static_output_dir = "dist"
+            if "vite" in deps:
+                facts.static_output_dir = "dist"
 
 
 def scan_repo(path: str, repo_url: str, head_sha: str) -> Facts:

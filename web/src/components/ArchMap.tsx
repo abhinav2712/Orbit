@@ -32,6 +32,8 @@ export default function ArchMap({ services }: { services: ServiceProposal[] }) {
         y: Math.floor(i / 3) * 140 + (publicRoles.has(s.role) ? 0 : 160),
       },
       data: { label: `${s.name}\n${s.zerops_type}` },
+      width: 180,
+      height: 70,
       style: {
         background: "#0f172a",
         border: `1px solid ${ROLE_COLOR[s.role] ?? "#475569"}`,
@@ -77,8 +79,11 @@ export default function ArchMap({ services }: { services: ServiceProposal[] }) {
           zoomable
           style={{ background: "#0f172a" }}
           maskColor="rgba(15, 23, 42, 0.6)"
-          nodeColor="#1e293b"
-          nodeStrokeColor="#475569"
+          nodeColor={(node) =>
+            ROLE_COLOR[services.find((s) => s.name === node.id)?.role ?? ""] ??
+            "#475569"
+          }
+          nodeStrokeColor="#0f172a"
         />
       </ReactFlow>
       <ServiceInspector service={selected} onClose={() => setSelected(null)} />

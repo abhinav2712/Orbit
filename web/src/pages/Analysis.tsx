@@ -39,6 +39,22 @@ export default function Analysis() {
       <Link to="/" className="text-sm text-slate-400 hover:text-accent">
         ← Orbit
       </Link>
+
+      <div className="flex items-center gap-2 mt-4 mb-1">
+        <span
+          className={`w-2 h-2 rounded-full ${
+            result.status === "done"
+              ? "bg-success"
+              : result.status === "failed"
+                ? "bg-red-500"
+                : "bg-info animate-pulse"
+          }`}
+        />
+        <span className="text-xs uppercase tracking-wide text-slate-400">
+          {result.status}
+        </span>
+      </div>
+
       <h1 className="text-xl font-mono-code mt-4 mb-1">
         {result.facts_summary?.repo_url ?? slug}
       </h1>
